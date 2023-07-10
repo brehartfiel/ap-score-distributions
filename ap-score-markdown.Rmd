@@ -1,0 +1,97 @@
+---
+title: "AP Exam Scores"
+author: "Breanna Hartfiel"
+date: "2023-07-08"
+output: html_document
+runtime: shiny
+---
+
+```{r global, include=FALSE}
+library(shiny)
+library(readxl)
+AP_Exam_Score_Distributions <- read_excel("C:/Users/Breanna Hartfiel/OneDrive/Desktop/AP Exam Score Distributions.xlsx", 
+                                          col_types = c("text", "numeric", "numeric", 
+                                                        "numeric", "numeric", "numeric", 
+                                                        "numeric", "date", "numeric"))
+apscores = AP_Exam_Score_Distributions
+colnames(apscores) = c("Exam", "Score 5", "Score 4", "Score 3", "Score 2", "Score 1", "Pass", "Date Tweeted", "Year") #Renaming columns
+
+#Date Tweeted variable has made the year 2023 needs fixing
+library(lubridate)
+apscores$`Date Tweeted`  #every year is 2023
+year(apscores$`Date Tweeted`) = apscores$Year  #overwriting the year with the correct year
+apscores$`Date Tweeted`
+
+library(dplyr)
+# create a Mean Score column using dplyr
+apscores = apscores %>% mutate(`Mean Score` = `Score 5`*5 + `Score 4`*4 + `Score 3`*3 + `Score 2`*2 + `Score 1`*1 )
+
+# Create a higher category column based off of the categories given by the college board (https://apcentral.collegeboard.org/courses)
+apscores = apscores %>% 
+  mutate(Category = case_when(Exam %in% c("AP Research", "AP Seminar")~"AP Capstone",
+                              Exam %in% c("English Literature", "English Language")~"English",
+                              Exam %in% c("Biology", "Chemistry", "Environmental Science", "Physics 1 - Algebra Based",
+                                          "Physics 2 - Algebra Based", "Physics B", "Physics C E&M", "Physics C Mech.")~"Science",
+                              Exam %in% c("European History", "Government and Politics, Comp.", "Government and Politics, US",
+                                          "Human Geography", "Macroeconomics", "Microeconomics", "Psychology","United States History", 
+                                          "World History")~"History and Social Science",
+                              Exam %in% c("Calculus AB", "Calculus BC", "Computer Science A", "Computer Science Principles", 
+                                          "Statistics")~"Math and Computer Science",
+                              Exam %in% c("Chinese Lang. and Culture", "French Language", "German Language",
+                                          "Italian Language and Culture", "Japanese Lang. and Culture", "Latin", 
+                                          "Spanish Language", "Spanish Literature")~"World Languages and Cultures",
+                              Exam %in% c("2-D Art and Design", "3-D Art and Design", "Art History", "Drawing", "Music Theory")~"Arts"
+                                         ))
+library(ggplot2)
+library(ggthemes)
+
+```
+
+
+```{r}
+ checkboxGroupInput("Exam", "Exams to show:",
+                     c("English Language" = "English Language",
+                       "Spanish Language" = "Spanish Language",
+                       "Psychology" = "Psychology",
+                       "US History" = "United States History",
+                       "Calculus AB" = "Calculus AB",
+                       "Statistics" = "Statistics"), 
+                    selected = c("Statistics", "Calculus AB"))
+```
+
+
+```{r}
+# shiny reactive graph based on Exams chosen
+# currently runs, but doesn't show the correct info
+
+renderPlot(ggplot(data = apscores %>% filter(Exam == input$Exam), aes(x=Year, y=Pass, color = Exam))+
+  geom_line() +
+  labs(title = "Passing Percent for AP Exams over Time", x="Date", y="Percent Passed", color = "Exam")+
+  theme_minimal()+
+  theme(legend.position="bottom"))
+```
+
+```{r}
+radioButtons("Category", "AP Exam Category:",
+                     c("AP Capstone" = "AP Capstone",
+                       "Arts" = "Arts", 
+                       "English" = "English",
+                       "History and Social Studies" = "History and Social Studies",
+                       "World Languages and Cultures" = "World Languages and Cultures",
+                       "Math and Computer Science" = "Math and Computer Science"), 
+                    selected = "Math and Computer Science")
+```
+
+
+
+
+```{r}
+# shiny reactive graph based on the category chosen
+# doesn't currently run
+
+renderPlot(ggplot(data = apscores %>% filter(Category == input$Category), aes(x=Year, y=Pass, color = Exam))+
+  geom_line() +
+  labs(title = "Passing Percent for AP Exams over Time", x="Date", y="Percent Passed", color = "Exam")+
+  theme_minimal()+
+  theme(legend.position="bottom"))
+```
